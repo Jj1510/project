@@ -1,0 +1,25 @@
+1. Generate Fake Data:
+-----generate_fake_data function utilizes the Faker library to generate random names, addresses, and emails.
+
+2. Append to Delta Table:
+-----append_to_delta_table function appends data to the Delta table using DeltaTable.forPath and write.format("delta").mode("append").
+
+3.Get Latest Data:
+-----get_latest_data function retrieves the latest version of the Delta table and optionally filters data based on timestamps.
+
+4.Email Notification (placeholder):
+-----send_email_notification function serves as a placeholder for your email sending logic using libraries or services like SendGrid.
+
+
+Integration with ADF:
+----Create a Notebook activity in your ADF pipeline.
+----Paste the script into the notebook.
+----Configure the Delta table path and other parameters within the script.
+----Utilize ADF triggers to schedule the pipeline execution at regular intervals.
+----Capture the last_timestamp from the previous run using ADF variables or widgets and pass it to the script for incremental retrieval (optional).
+
+
+
+
+
+

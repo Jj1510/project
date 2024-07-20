@@ -1,0 +1,87 @@
+# Import libraries
+from pyspark.sql.functions import col, current_timestamp
+from delta.tables import DeltaTable
+
+def generate_fake_data(spark):
+  """
+  Generates a DataFrame with random names, addresses, and emails.
+
+  Args:
+      spark: SparkSession object
+
+  Returns:
+      Spark DataFrame containing the generated data
+  """
+  from faker import Faker
+
+  fake = Faker()
+  data = []
+  for _ in range(10):  # Adjust number of rows generated here
+      data.append((fake.name(), fake.address().street_address(), fake.email()))
+  return spark.createDataFrame(data, ["Name", "Address", "Email"])
+
+def append_to_delta_table(data, delta_path):
+  """
+  Appends data to a Delta table.
+
+  Args:
+      data: Spark DataFrame containing data to append
+      delta_path: Path to the Delta table location
+  """
+  delta_table = DeltaTable.forPath(spark, delta_path)
+  delta_table.alias("bronze").write.format("delta").mode("append").saveAsTable(delta_path)
+  data.write.format("delta").mode("append").saveAsTable(delta_path)
+
+def get_latest_data(delta_path, last_timestamp=None):
+  """
+  Retrieves the latest data from a Delta table, optionally filtering by timestamp.
+
+  Args:
+      delta_path: Path to the Delta table location
+      last_timestamp: Optional timestamp for filtering (inclusive)
+
+  Returns:
+      Spark DataFrame containing the latest data
+  """
+  delta_table = DeltaTable.forPath(spark, delta_path)
+  latest_version = delta_table.history().latestVersion().version
+  query = f"SELECT * FROM TABLE delta.`{delta_path}` WHERE version = {latest_version}"
+  if last_timestamp:
+    query += f" AND current_timestamp >= '{last_timestamp}'"
+  return spark.sql(query)
+
+def send_email_notification(data):
+  """
+  Sends an email notification with a summary of the appended data (implementation details omitted).
+
+  Args:
+      data: Spark DataFrame containing the latest appended data
+  """
+  # Replace with your email sending logic using libraries or services
+  # like SendGrid or Twilio SendGrid API
+  pass
+
+# Configure Spark session (assuming configured within Databricks)
+spark = spark.builder.getOrCreate()
+
+# Replace with your Delta table path
+delta_path = "path/to/your/delta/table"
+
+# Generate fake data
+new_data = generate_fake_data(spark)
+
+# Append data to Delta table
+append_to_delta_table(new_data, delta_path)
+
+# Get latest data with timestamp filter (optional for incremental retrieval)
+latest_data = get_latest_data(delta_path, last_timestamp=dbutils.widgets.get("last_timestamp"))
+
+# Display latest data (for debugging purposes)
+latest_data.show()
+
+# Send email notification with summary (replace with your implementation)
+send_email_notification(latest_data)
+
+# Update last_timestamp for next run (optional for incremental retrieval)
+dbutils.widgets.set("last_timestamp", current_timestamp().cast("timestamp"))
+
